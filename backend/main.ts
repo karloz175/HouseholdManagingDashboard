@@ -1,21 +1,23 @@
 import express from "express";
 import { DatabaseConnector } from "./database";
+import cors from "cors";
 
 const dbConnector = DatabaseConnector.getInstance();
 
 const app = express();
-const port = 3000;
+const port = 8080;
 
+app.use(cors());
 app.use(express.json());
 
-app.use((req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader === "Bearer mySecretToken") {
-    next();
-    return;
-  }
-  res.status(401).json({ message: "You need to provide a valid token!" });
-});
+// app.use((req, res, next) => {
+//   const authHeader = req.headers.authorization;
+//   if (authHeader === "Bearer mySecretToken") {
+//     next();
+//     return;
+//   }
+//   res.status(401).json({ message: "You need to provide a valid token!" });
+// });
 
 app.get("/", (req, res) => {
   try {
@@ -70,9 +72,8 @@ function isValidDate(date: string): boolean {
   return regex.test(date);
 }
 
-app.get("/transactions/daterange", (req, res) => {
+app.get("/daterange/dates", (req, res) => {
   const { startDate, endDate } = req.query;
-
   if (
     typeof startDate !== "string" ||
     typeof endDate !== "string" ||
@@ -90,6 +91,12 @@ app.get("/transactions/daterange", (req, res) => {
       startDate as string,
       endDate as string
     );
+    if (transactions.length === 0) {
+      res.status(404).json({
+        message: "No transactions found in the given date range.",
+      });
+      return;
+    }
     res.json(transactions);
   } catch (error) {
     res.status(500).json({
